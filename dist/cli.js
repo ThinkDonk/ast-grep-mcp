@@ -186,7 +186,8 @@ function formatSearchResult(result) {
     lines.push(`[TRUNCATED] Results truncated (${reason})
 `);
   }
-  lines.push(`Found ${result.matches.length} match(es)${result.truncated ? ` (truncated from ${result.totalMatches})` : ""}:
+  const totalSuffix = result.truncated ? result.totalMatches < 0 ? " (truncated, total unknown)" : ` (truncated from ${result.totalMatches})` : "";
+  lines.push(`Found ${result.matches.length} match(es)${totalSuffix}:
 `);
   for (const match of result.matches) {
     const loc = `${match.file}:${match.range.start.line + 1}:${match.range.start.column + 1}`;
@@ -266,7 +267,7 @@ function createSgResultFromStdout(stdout) {
   const finalMatches = matchesTruncated ? matches.slice(0, DEFAULT_MAX_MATCHES) : matches;
   return {
     matches: finalMatches,
-    totalMatches,
+    totalMatches: outputTruncated ? -1 : totalMatches,
     truncated: outputTruncated || matchesTruncated,
     truncatedReason: outputTruncated ? "max_output_bytes" : matchesTruncated ? "max_matches" : void 0
   };
@@ -411,9 +412,10 @@ async function collectProcessOutputWithTimeout(process2, timeoutMs) {
   });
   const stdoutPromise = process2.stdout ? new Response(process2.stdout).text() : Promise.resolve("");
   const stderrPromise = process2.stderr ? new Response(process2.stderr).text() : Promise.resolve("");
-  const stdout = await Promise.race([stdoutPromise, timeoutPromise]);
-  const stderr2 = await stderrPromise;
-  const exitCode = await process2.exited;
+  const [stdout, stderr2, exitCode] = await Promise.race([
+    Promise.all([stdoutPromise, stderrPromise, process2.exited]),
+    timeoutPromise
+  ]);
   return { stdout, stderr: stderr2, exitCode };
 }
 
@@ -421,7 +423,7 @@ async function collectProcessOutputWithTimeout(process2, timeoutMs) {
 var SG_BINARY_NOT_FOUND_MESSAGE = `ast-grep (sg) binary not found.
 
 Install options:
-  bun add -D @ast-grep/cli
+  npm install -D @ast-grep/cli
   cargo install ast-grep --locked
   brew install ast-grep`;
 async function runSg(options) {
@@ -690,6 +692,7 @@ var AST_GREP_MCP_TOOLS = [
 ];
 async function handleAstGrepMcpRequest(input, options = {}) {
   if (!isRecord(input)) return errorResponse(null, -32600, "Invalid Request");
+  if (input.jsonrpc !== "2.0") return errorResponse(null, -32600, "Invalid Request: missing or wrong jsonrpc version");
   const id = jsonRpcId(input.id);
   if (input.method === "notifications/initialized") return void 0;
   if (input.method === "ping") return successResponse(id, {});
