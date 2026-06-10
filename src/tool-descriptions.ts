@@ -21,6 +21,10 @@ export const AST_GREP_SEARCH_DESCRIPTION = [
   '  rust            "fn $NAME($$$) -> $RET { $$$ }", "impl $TRAIT for $T { $$$ }"',
   '  csharp          "class $NAME { $$$ }", "void $NAME($$$)", "$OBJ.$METHOD($$$)"',
   "",
+  "Limitations:",
+  "  Decorators/attributes and their target (function, class) are sibling AST nodes — a single pattern cannot match both. Search separately or use grep.",
+  "  C# patterns for methods, attributes, or properties need class context: write \"class $C { void $NAME($$$) { $$$ } }\" not \"void $NAME($$$)\".",
+  "",
   "On empty results the tool returns a hint naming the exact mistake. If the pattern is fundamentally text-shaped, stop retrying and switch to grep.",
 ].join("\n")
 
