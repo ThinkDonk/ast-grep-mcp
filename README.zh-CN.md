@@ -1,6 +1,6 @@
 # ast-grep-mcp
 
-[![CI](https://github.com/ZhouDate/ast-grep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ZhouDate/ast-grep-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/ThinkDonk/ast-grep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ThinkDonk/ast-grep-mcp/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@chousyn/ast-grep-mcp.svg)](https://www.npmjs.com/package/@chousyn/ast-grep-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

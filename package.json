@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ZhouDate/ast-grep-mcp"
+    "url": "https://github.com/ThinkDonk/ast-grep-mcp"
   },
   "keywords": [
     "ast-grep",
