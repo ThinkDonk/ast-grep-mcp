@@ -32,6 +32,18 @@ describe("detectLanguageSpecificMistake", () => {
     expect(detectLanguageSpecificMistake("def foo():", "python")).not.toBeNull();
   });
 
+  it("detects Python decorator + function sibling pattern", () => {
+    expect(detectLanguageSpecificMistake("@decorator\ndef foo():", "python")).not.toBeNull();
+  });
+
+  it("detects Python decorator + class sibling pattern", () => {
+    expect(detectLanguageSpecificMistake("@dataclass\nclass Foo:", "python")).not.toBeNull();
+  });
+
+  it("does not flag Python decorator alone", () => {
+    expect(detectLanguageSpecificMistake("@decorator", "python")).toBeNull();
+  });
+
   it("detects JS function without body", () => {
     expect(detectLanguageSpecificMistake("function $NAME", "javascript")).not.toBeNull();
   });
@@ -44,8 +56,52 @@ describe("detectLanguageSpecificMistake", () => {
     expect(detectLanguageSpecificMistake("fn $NAME", "rust")).not.toBeNull();
   });
 
+  it("detects Rust attribute + struct sibling pattern", () => {
+    expect(detectLanguageSpecificMistake("#[derive(Debug)]\nstruct Point", "rust")).not.toBeNull();
+  });
+
+  it("detects Rust attribute + fn sibling pattern", () => {
+    expect(detectLanguageSpecificMistake("#[test]\nfn test_foo()", "rust")).not.toBeNull();
+  });
+
+  it("does not flag Rust attribute alone", () => {
+    expect(detectLanguageSpecificMistake("#[derive(Debug)]", "rust")).toBeNull();
+  });
+
   it("detects C# class without body", () => {
     expect(detectLanguageSpecificMistake("class $NAME", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# attribute + method sibling pattern (with newline)", () => {
+    expect(detectLanguageSpecificMistake("[HttpGet]\npublic void Configure()", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# attribute + method sibling pattern (same line)", () => {
+    expect(detectLanguageSpecificMistake("[HttpGet] public void Configure()", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# standalone method signature (no body, no class context)", () => {
+    expect(detectLanguageSpecificMistake("public void Configure()", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# standalone static async method signature", () => {
+    expect(detectLanguageSpecificMistake("public static async Task RunAsync()", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# standalone attribute (parsed as array indexer)", () => {
+    expect(detectLanguageSpecificMistake("[HttpGet]", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# standalone property", () => {
+    expect(detectLanguageSpecificMistake("public int Count { get; set; }", "csharp")).not.toBeNull();
+  });
+
+  it("detects C# standalone property with readonly type", () => {
+    expect(detectLanguageSpecificMistake("public readonly string Name { get; }", "csharp")).not.toBeNull();
+  });
+
+  it("returns null for valid C# pattern with class context", () => {
+    expect(detectLanguageSpecificMistake("class $C { void $NAME($$$) { $$$ } }", "csharp")).toBeNull();
   });
 
   it("returns null for valid pattern", () => {

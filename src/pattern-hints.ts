@@ -29,6 +29,10 @@ export function detectLanguageSpecificMistake(
   const src = pattern.trim()
 
   if (lang === "python") {
+    // Python decorators and functions are sibling AST nodes — combining them fails
+    if (/^@\w+.*\n\s*(def |async def |class )/s.test(src)) {
+      return 'Hint: Python decorators and functions are sibling AST nodes — a single pattern cannot match both. Search for the decorator and function separately, or use grep for text search.'
+    }
     if (src.startsWith("class ") && src.endsWith(":")) {
       return `Hint: Remove trailing colon. Try: "${src.slice(0, -1)}"`
     }
@@ -50,17 +54,44 @@ export function detectLanguageSpecificMistake(
   }
 
   if (lang === "rust") {
+    // Rust attributes and items are sibling AST nodes — combining them fails
+    if (/^#\[.*\]\s*\n\s*(fn |struct |enum |mod |trait |impl |type |const |static )/s.test(src)) {
+      return 'Hint: Rust attributes and items are sibling AST nodes — a single pattern cannot match both. Search for the attribute and item separately, or use grep for text search.'
+    }
     if (/^fn\s+\$[A-Z_]+\s*$/i.test(src)) {
       return 'Hint: Rust fn patterns need params and body. Try "fn $NAME($$$) { $$$ }"'
     }
   }
 
   if (lang === "csharp") {
+    // C# tree-sitter parses attributes and methods as sibling nodes, and
+    // standalone patterns are parsed out of class context, producing wrong
+    // node types (e.g. "local_function_statement" instead of "method_declaration",
+    // or "bracketed_argument_list" instead of "attribute_list").
+    // Detect these cases and suggest embedding the pattern in class context.
+
+    // Multi-node pattern: attribute + method/property (sibling nodes)
+    if (/^\[.*\]\s*\n/s.test(src) || /^\[.*\]\s+(public|private|protected|internal)/i.test(src)) {
+      return 'Hint: C# attributes and methods are sibling AST nodes — a single pattern cannot match both. Use "class $C { [$ATTR] void $M() { $$$ } }" to embed in class context, or use grep for text search.'
+    }
+
     if (/^class\s+\$[A-Z_]+\s*$/i.test(src)) {
       return 'Hint: C# class patterns need a body. Try "class $NAME { $$$ }"'
     }
-    if (/^(public|private|protected|internal)?\s*(static\s+)?(async\s+)?(void|Task|Task<\$[A-Z_]+>|int|string|bool)\s+\$[A-Z_]+\s*\([^)]*\)\s*$/i.test(src)) {
-      return 'Hint: C# method patterns need a body. Try "void $NAME($$$) { $$$ }"'
+
+    // Standalone method signature without body (out of class context → wrong node type)
+    if (/^(public|private|protected|internal)?\s*(static\s+)?(async\s+)?(override\s+)?(virtual\s+)?(void|Task|Task<\$[A-Z_]+>|int|string|bool|var)\s+(\$[A-Z_]+|[A-Z_]\w*)\s*\([^)]*\)\s*$/i.test(src)) {
+      return 'Hint: C# method patterns are parsed as "local_function_statement" out of class context. Add a body and embed in class context: "class $C { void $NAME($$$) { $$$ } }"'
+    }
+
+    // Standalone attribute (out of class context → parsed as array indexer, not attribute_list)
+    if (/^\[.*\]\s*$/s.test(src)) {
+      return 'Hint: C# attributes are parsed as "bracketed_argument_list" out of class context. Embed in class context: "class $C { [$ATTR] void $M() { $$$ } }"'
+    }
+
+    // Standalone property (out of class context → wrong node type)
+    if (/^(public|private|protected|internal)?\s*(static\s+)?(readonly\s+)?(int|string|bool|var|\$[A-Z_]+)\s+(\$[A-Z_]+|[A-Z_]\w*)\s*\{\s*(get;\s*set;|get;)\s*\}\s*$/i.test(src)) {
+      return 'Hint: C# property patterns need class context. Try "class $C { $TYPE $NAME { get; set; } }"'
     }
   }
 
