@@ -101,3 +101,24 @@ export function detectLanguageSpecificMistake(
 export function getPatternHint(pattern: string, lang: CliLanguage): string | null {
   return detectRegexMisuse(pattern) ?? detectLanguageSpecificMistake(pattern, lang)
 }
+
+const META_VAR_RE = /\$[A-Z_][A-Z0-9_]*/g
+const MULTI_VAR_RE = /\$\$\$([A-Z_][A-Z0-9_]*)?/g
+
+function extractMetaVars(src: string): Set<string> {
+  const vars = new Set<string>()
+  for (const m of src.matchAll(META_VAR_RE)) vars.add(m[0])
+  for (const m of src.matchAll(MULTI_VAR_RE)) vars.add(m[0])
+  return vars
+}
+
+export function detectRewriteVariableMismatch(pattern: string, rewrite: string): string | null {
+  const patternVars = extractMetaVars(pattern)
+  const rewriteVars = extractMetaVars(rewrite)
+  const unmatched: string[] = []
+  for (const v of rewriteVars) {
+    if (!patternVars.has(v)) unmatched.push(v)
+  }
+  if (unmatched.length === 0) return null
+  return `Warning: rewrite references meta-variable(s) ${unmatched.map(v => `"${v}"`).join(", ")} not captured in pattern. They will be replaced with empty strings. Ensure all $VAR/$$$ in rewrite exist in pattern.`
+}

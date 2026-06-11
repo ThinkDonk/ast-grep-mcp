@@ -34,6 +34,10 @@ src/
 - **Two-pass replace**: Search preview first, then `--update-all` for actual writes
 - **Mock-friendly**: `AstGrepMcpOptions.runSg` allows injecting mock runner for tests
 
+## Development Rules
+
+- **Do not use `ast-grep_replace` on files containing `$` variable literals** (e.g. `pattern-hints.ts`, `tool-descriptions.ts`). The `$VAR`/`$$$` in string literals will be interpreted as AST meta-variables and silently stripped. Use the Edit tool or ds-executor subagent instead.
+
 ## Build & Test
 
 ```bash

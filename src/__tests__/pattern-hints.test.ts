@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectRegexMisuse, detectLanguageSpecificMistake } from "../pattern-hints.js";
+import { detectRegexMisuse, detectLanguageSpecificMistake, detectRewriteVariableMismatch } from "../pattern-hints.js";
 
 describe("detectRegexMisuse", () => {
   it("detects \\w escape", () => {
@@ -106,5 +106,44 @@ describe("detectLanguageSpecificMistake", () => {
 
   it("returns null for valid pattern", () => {
     expect(detectLanguageSpecificMistake("function $NAME($$$) { $$$ }", "javascript")).toBeNull();
+  });
+});
+
+describe("detectRewriteVariableMismatch", () => {
+  it("returns null when rewrite variables are all captured in pattern", () => {
+    expect(detectRewriteVariableMismatch("console.log($MSG)", "logger.info($MSG)")).toBeNull();
+  });
+
+  it("detects single unmatched variable in rewrite", () => {
+    const result = detectRewriteVariableMismatch("console.log($MSG)", "logger.info($MSG, $EXTRA)");
+    expect(result).not.toBeNull();
+    expect(result).toContain('"$EXTRA"');
+  });
+
+  it("detects multiple unmatched variables in rewrite", () => {
+    const result = detectRewriteVariableMismatch("foo($A)", "bar($B, $C)");
+    expect(result).not.toBeNull();
+    expect(result).toContain('"$B"');
+    expect(result).toContain('"$C"');
+  });
+
+  it("detects unmatched $$$ variable in rewrite", () => {
+    const result = detectRewriteVariableMismatch("console.log($MSG)", "logger.info($$$ARGS)");
+    expect(result).not.toBeNull();
+    expect(result).toContain('"$$$ARGS"');
+  });
+
+  it("returns null when both pattern and rewrite have $$$", () => {
+    expect(detectRewriteVariableMismatch("console.log($$$ARGS)", "logger.info($$$ARGS)")).toBeNull();
+  });
+
+  it("returns null when rewrite has no variables", () => {
+    expect(detectRewriteVariableMismatch("console.log($$$)", "hardcoded()")).toBeNull();
+  });
+
+  it("detects mismatch with $$$ in rewrite but not pattern", () => {
+    const result = detectRewriteVariableMismatch("foo($X)", "bar($$$)");
+    expect(result).not.toBeNull();
+    expect(result).toContain('"$$$"');
   });
 });

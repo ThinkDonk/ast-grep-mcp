@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline";
 import { CLI_LANGUAGES } from "./constants.js";
-import { getPatternHint } from "./pattern-hints.js";
+import { getPatternHint, detectRewriteVariableMismatch } from "./pattern-hints.js";
 import { formatReplaceResult, formatSearchResult } from "./result-formatter.js";
 import { runSg, type RunOptions } from "./runner.js";
 import { AST_GREP_REPLACE_DESCRIPTION, AST_GREP_SEARCH_DESCRIPTION, AST_GREP_SEARCH_PATTERN_PARAM } from "./tool-descriptions.js";
@@ -162,8 +162,11 @@ async function executeAstGrepTool(name: string, args: unknown, options: AstGrepM
   }
   if (name === "replace") {
     const input = parseReplaceArgs(args, workspaceDirectory);
+    const mismatchWarning = detectRewriteVariableMismatch(input.options.pattern, input.options.rewrite ?? "")
     const result = await runner(input.options);
-    return { content: [{ type: "text", text: formatReplaceResult(result, input.dryRun) }], isError: Boolean(result.error) };
+    let output = formatReplaceResult(result, input.dryRun);
+    if (mismatchWarning) output += `\n\n${mismatchWarning}`;
+    return { content: [{ type: "text", text: output }], isError: Boolean(result.error) };
   }
   throw new Error(`Unknown ast-grep tool: ${name}`);
 }
