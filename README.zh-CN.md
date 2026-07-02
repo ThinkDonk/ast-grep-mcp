@@ -21,6 +21,14 @@
 
 ## 安装
 
+### 通过 npm 安装
+
+```bash
+npm install @chousyn/ast-grep-mcp
+```
+
+### 从源码构建（本地）
+
 ```bash
 npm install
 npm run build

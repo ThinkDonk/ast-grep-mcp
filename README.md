@@ -1,7 +1,7 @@
 # ast-grep-mcp
 
 [![CI](https://github.com/ThinkDonk/ast-grep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ThinkDonk/ast-grep-mcp/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/ast-grep-mcp.svg)](https://www.npmjs.com/package/ast-grep-mcp)
+[![npm version](https://img.shields.io/npm/v/@chousyn/ast-grep-mcp.svg)](https://www.npmjs.com/package/@chousyn/ast-grep-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [中文文档](./README.zh-CN.md)
@@ -20,6 +20,14 @@ Extracted from [oh-my-opencode](https://github.com/code-yeongyu/oh-my-openagent)
 - **Bun/Node compatibility**: Spawn shim handles both runtimes
 
 ## Installation
+
+### Via npm
+
+```bash
+npm install @chousyn/ast-grep-mcp
+```
+
+### From source (local build)
 
 ```bash
 npm install
